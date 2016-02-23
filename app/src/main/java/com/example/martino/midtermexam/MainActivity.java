@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,6 +21,8 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+
+import static com.example.martino.midtermexam.HttpUtils.getResponse;
 
 public class MainActivity extends ListActivity {
 
@@ -34,15 +37,16 @@ public class MainActivity extends ListActivity {
 
     // contacts JSONArray
     JSONArray title = null;
-    TextView tv;
+    TextView tvBooktitle;
     // Hashmap for ListView
     ArrayList<HashMap<String, String>> bookList;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        tv=(TextView)findViewById(R.id.bookname);
+        tvBooktitle = (TextView) findViewById(R.id.bookname);
         bookList = new ArrayList<HashMap<String, String>>();
 
         ListView lv = getListView();
@@ -54,7 +58,7 @@ public class MainActivity extends ListActivity {
 
     /**
      * Async task class to get json by making HTTP call
-     * */
+     */
     private class GetBooks extends AsyncTask<Void, Void, Void> {
 
         @Override
@@ -70,33 +74,27 @@ public class MainActivity extends ListActivity {
 
         @Override
         protected Void doInBackground(Void... arg0) {
-            // Creating service handler class instance
-            HttpUtils sh = new HttpUtils();
+            String bookname;
+            String isRead ;
 
-            // Making a request to url and getting response
-            String jsonStr = sh.getResponse(url,"GET");
-
+            String jsonStr = getResponse(url, "GET");
             Log.d("Response: ", "> " + jsonStr);
-
             if (jsonStr != null) {
                 try {
-                    JSONObject jsonObj = new JSONObject(jsonStr);
-                    // Getting JSON Array node
-                    title = jsonObj.getJSONArray(TAG_BOOKTITLE);
-
-                    for (int i = 0; i < title.length(); i++) {
-                        JSONObject c = title.getJSONObject(i);
-                        String bookname = c.getString(TAG_BOOKTITLE);
-                        String isRead = c.getString(TAG_ISREAD);
-                        // tmp hashmap for single contact
-                        HashMap<String, String> book = new HashMap<String, String>();
-
+                    JSONArray jsonArray = new JSONArray(jsonStr);
+                    for (int n = 0; n < jsonArray.length(); n++) {
+                        JSONObject obj = jsonArray.getJSONObject(n);
+                         bookname = obj.getString(TAG_BOOKTITLE);
+                         isRead = obj.getString(TAG_ISREAD);
                         // adding each child node to HashMap key => value
+                        HashMap<String, String> book = new HashMap<String, String>();
                         book.put(TAG_BOOKTITLE, bookname);
-                        book.put(TAG_ISREAD,isRead );
-                        // adding contact to contact list
+                        book.put(TAG_ISREAD, isRead);
                         bookList.add(book);
+
                     }
+
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -111,6 +109,8 @@ public class MainActivity extends ListActivity {
         protected void onPostExecute(Void result) {
             super.onPostExecute(result);
 
+
+
             // Dismiss the progress dialog
             if (pDialog.isShowing())
                 pDialog.dismiss();
@@ -119,9 +119,9 @@ public class MainActivity extends ListActivity {
              * */
             ListAdapter adapter = new SimpleAdapter(
                     MainActivity.this, bookList,
-                    R.layout.list_item, new String[] { TAG_BOOKTITLE, TAG_ISREAD,
-                     }, new int[] { R.id.bookname,
-                    R.id.read});
+                    R.layout.list_item, new String[]{TAG_BOOKTITLE,
+            }, new int[]{R.id.bookname,
+                   });
             setListAdapter(adapter);
         }
 
